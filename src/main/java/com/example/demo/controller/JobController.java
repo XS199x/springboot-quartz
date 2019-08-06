@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
@@ -43,23 +44,28 @@ public class JobController {
 	
 	private static Logger log = LoggerFactory.getLogger(JobController.class);
 	
+	private static final String DEF_JOB_CLASSNAME = "com.example.demo.job.UrlJob";
+	
 	
 	@PostMapping(value = "/addjob")
-	public void addjob(@RequestParam(value = "jobClassName") String jobClassName,
-	                   @RequestParam(value = "jobGroupName") String jobGroupName,
+	public void addjob(@RequestParam(value = "jobClassName", defaultValue = DEF_JOB_CLASSNAME) String jobClassName,
 	                   @RequestParam(value = "cronExpression") String cronExpression,
+	                   @RequestParam(value = "name") String name,
 	                   @RequestParam(value = "url") String url) throws Exception {
-		addJob(jobClassName, jobGroupName, cronExpression, url);
+		addJob(jobClassName, cronExpression, name, url);
 	}
 	
-	public void addJob(String jobClassName, String jobGroupName, String cronExpression, String url) throws Exception {
+	public void addJob(String jobClassName, String cronExpression, String name, String url) throws Exception {
 		
+		String jobGroupName =  UUID.randomUUID().toString();
 		// 启动调度器
 		scheduler.start();
 		
 		//构建job信息
 		JobDetail jobDetail = JobBuilder.newJob(getClass(jobClassName).getClass()).withIdentity(jobClassName, jobGroupName).build();
 		jobDetail.getJobDataMap().put("url",url);
+		jobDetail.getJobDataMap().put("name",name);
+		
 		
 		//表达式调度构建器(即任务执行的时间)
 		CronScheduleBuilder scheduleBuilder = CronScheduleBuilder.cronSchedule(cronExpression);
@@ -78,7 +84,7 @@ public class JobController {
 	
 	
 	@PostMapping(value = "/pausejob")
-	public void pausejob(@RequestParam(value = "jobClassName") String jobClassName, @RequestParam(value = "jobGroupName") String jobGroupName) throws Exception {
+	public void pausejob(@RequestParam(value = "jobClassName",defaultValue = DEF_JOB_CLASSNAME) String jobClassName, @RequestParam(value = "jobGroupName") String jobGroupName) throws Exception {
 		jobPause(jobClassName, jobGroupName);
 	}
 	
@@ -88,7 +94,7 @@ public class JobController {
 	
 	
 	@PostMapping(value = "/resumejob")
-	public void resumejob(@RequestParam(value = "jobClassName") String jobClassName, @RequestParam(value = "jobGroupName") String jobGroupName) throws Exception {
+	public void resumejob(@RequestParam(value = "jobClassName",defaultValue = DEF_JOB_CLASSNAME) String jobClassName, @RequestParam(value = "jobGroupName") String jobGroupName) throws Exception {
 		jobresume(jobClassName, jobGroupName);
 	}
 	
@@ -98,7 +104,7 @@ public class JobController {
 	
 	
 	@PostMapping(value = "/reschedulejob")
-	public void rescheduleJob(@RequestParam(value = "jobClassName") String jobClassName,
+	public void rescheduleJob(@RequestParam(value = "jobClassName",defaultValue = DEF_JOB_CLASSNAME) String jobClassName,
 	                          @RequestParam(value = "jobGroupName") String jobGroupName,
 	                          @RequestParam(value = "cronExpression") String cronExpression) throws Exception {
 		jobreschedule(jobClassName, jobGroupName, cronExpression);
@@ -125,7 +131,7 @@ public class JobController {
 	
 	
 	@PostMapping(value = "/deletejob")
-	public void deletejob(@RequestParam(value = "jobClassName") String jobClassName, @RequestParam(value = "jobGroupName") String jobGroupName) throws Exception {
+	public void deletejob(@RequestParam(value = "jobClassName",defaultValue = DEF_JOB_CLASSNAME) String jobClassName, @RequestParam(value = "jobGroupName") String jobGroupName) throws Exception {
 		jobdelete(jobClassName, jobGroupName);
 	}
 	

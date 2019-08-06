@@ -10,6 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 /**
  * 发送url请求
  * @author
@@ -28,9 +31,9 @@ public class UrlJob implements BaseJob{
 		JobDataMap jobDataMap = context.getJobDetail().getJobDataMap();
 		String url = jobDataMap.getString("url");
 		try {
+			_log.info(JSONUtils.toJSONString(jobDataMap));
 			HttpResult httpResult = httpApiService.doPost(url);
-			System.out.println("url: "+ url);
-			System.out.println("httpResult: "+ httpResult.toString());
+			_log.info(httpResult.toString());
 		} catch (Exception e) {
 			e.printStackTrace();
 			_log.error(e.toString());

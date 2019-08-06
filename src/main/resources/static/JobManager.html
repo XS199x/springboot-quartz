@@ -37,48 +37,27 @@
       border
     >
       <el-table-column
-        prop="job_NAME"
+        prop="name"
         label="任务名称"
         sortable
         show-overflow-tooltip>
       </el-table-column>
-
       <el-table-column
-        prop="job_GROUP"
-        label="任务所在组"
-        sortable>
+        prop="url"
+        label="请求url"
+        sortable
+        show-overflow-tooltip>
       </el-table-column>
-
-      <el-table-column
-        prop="job_CLASS_NAME"
-        label="任务类名"
-        sortable>
-      </el-table-column>
-
-      <el-table-column
-        prop="trigger_NAME"
-        label="触发器名称"
-        sortable>
-      </el-table-column>
-
-      <el-table-column
-        prop="trigger_GROUP"
-        label="触发器所在组"
-        sortable>
-      </el-table-column>
-
       <el-table-column
         prop="cron_EXPRESSION"
         label="表达式"
         sortable>
       </el-table-column>
-
       <el-table-column
-        prop="time_ZONE_ID"
-        label="时区"
+        prop="job_GROUP"
+        label="任务分组"
         sortable>
       </el-table-column>
-
       <el-table-column label="操作" width="300">
         <template scope="scope">
           <el-button
@@ -124,16 +103,13 @@
   <el-dialog title="添加任务" :visible.sync="dialogFormVisible">
     <el-form :model="form">
       <el-form-item label="任务名称" label-width="120px" style="width:35%">
-        <el-input v-model="form.jobName" auto-complete="off"></el-input>
+        <el-input v-model="form.name" auto-complete="off"></el-input>
       </el-form-item>
-      <el-form-item label="任务分组" label-width="120px" style="width:35%">
-        <el-input v-model="form.jobGroup" auto-complete="off"></el-input>
+      <el-form-item label="请求url" label-width="120px" style="width:35%">
+        <el-input v-model="form.url" auto-complete="off"></el-input>
       </el-form-item>
       <el-form-item label="表达式" label-width="120px" style="width:35%">
         <el-input v-model="form.cronExpression" auto-complete="off"></el-input>
-      </el-form-item>
-      <el-form-item label="url" label-width="120px" style="width:35%">
-        <el-input v-model="form.url" auto-complete="off"></el-input>
       </el-form-item>
     </el-form>
     <div slot="footer" class="dialog-footer">
@@ -182,17 +158,15 @@
 			updateFormVisible: false,
 			//提交的表单
 			form: {
-				jobName: '',
-				jobGroup: '',
-				cronExpression: '',
+				name: '',
 				url: '',
+				cronExpression: '',
 			},
 
 			updateform: {
-				jobName: '',
-				jobGroup: '',
-				cronExpression: '',
+				name: '',
 				url: '',
+				cronExpression: '',
 			},
 		},
 
@@ -200,8 +174,20 @@
 			//从服务器读取数据
 			loadData: function (pageNum, pageSize) {
 				this.$http.get('job/queryjob?' + 'pageNum=' + pageNum + '&pageSize=' + pageSize).then(function (res) {
-					console.log(res)
-					this.tableData = res.body.JobAndTrigger.list;
+					console.log(res);
+					this.tableData = [];
+          var list = res.body.JobAndTrigger.list;
+					var jobDataList,l;
+          for(var i=0;i<list.length;i++){
+          	jobDataList = list[i].job_DATA.split(/\n/);
+	          for(var j=0;j<jobDataList.length;j++){
+	          	if(jobDataList[j].indexOf("=") > -1){
+			          l = jobDataList[j].split("=");
+			          list[i][l[0]] = l[1];
+              }
+	          }
+	          this.tableData.push(list[i]);
+          }
 					this.totalCount = res.body.number;
 				}, function () {
 					console.log('failed');
@@ -210,7 +196,6 @@
 			//单行删除
 			handleDelete: function (index, row) {
 				this.$http.post('job/deletejob', {
-					"jobClassName": row.job_NAME,
 					"jobGroupName": row.job_GROUP
 				}, {emulateJSON: true}).then(function (res) {
 					this.loadData(this.currentPage, this.pagesize);
@@ -221,7 +206,6 @@
 			//暂停任务
 			handlePause: function (index, row) {
 				this.$http.post('job/pausejob', {
-					"jobClassName": row.job_NAME,
 					"jobGroupName": row.job_GROUP
 				}, {emulateJSON: true}).then(function (res) {
 					this.loadData(this.currentPage, this.pagesize);
@@ -232,7 +216,6 @@
 			//恢复任务
 			handleResume: function (index, row) {
 				this.$http.post('job/resumejob', {
-					"jobClassName": row.job_NAME,
 					"jobGroupName": row.job_GROUP
 				}, {emulateJSON: true}).then(function (res) {
 					this.loadData(this.currentPage, this.pagesize);
@@ -251,8 +234,7 @@
 			//添加
 			add: function () {
 				this.$http.post('job/addjob', {
-					"jobClassName": this.form.jobName,
-					"jobGroupName": this.form.jobGroup,
+					"name": this.form.name,
 					"cronExpression": this.form.cronExpression,
 					"url": this.form.url
 				}, {emulateJSON: true}).then(function (res) {
@@ -267,8 +249,9 @@
 			handleUpdate: function (index, row) {
 				console.log(row)
 				this.updateFormVisible = true;
-				this.updateform.jobName = row.job_CLASS_NAME;
 				this.updateform.jobGroup = row.job_GROUP;
+				this.updateform.name = row.name;
+				this.updateform.url = row.url;
 			},
 
 			//更新任务
@@ -276,9 +259,10 @@
 				this.$http.post
 				('job/reschedulejob',
 					{
-						"jobClassName": this.updateform.jobName,
+						"name": this.updateform.name,
 						"jobGroupName": this.updateform.jobGroup,
-						"cronExpression": this.updateform.cronExpression
+						"cronExpression": this.updateform.cronExpression,
+						"url": this.updateform.url
 					}, {emulateJSON: true}
 				).then(function (res) {
 					this.loadData(this.currentPage, this.pagesize);
